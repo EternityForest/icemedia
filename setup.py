@@ -16,7 +16,7 @@ setuptools.setup(
     include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",
-        "OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
+        "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.6",
@@ -25,5 +25,5 @@ setuptools.setup(
 
 
 # To push to pypi
-# sudo python3 setup.py sdist bdist_wheel
+# python3 setup.py sdist bdist_wheel
 # python3 -m twine upload dist/*

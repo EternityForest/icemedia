@@ -2,6 +2,12 @@
 More comfortable wrapper for gstreamer and JACK
 
 
+## Install
+
+```
+pip install icemedia
+```
+
 
 ## iceflow.sound_player
 
