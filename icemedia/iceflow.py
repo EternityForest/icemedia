@@ -201,10 +201,15 @@ class GStreamerPipeline:
             if isinstance(item, ElementProxy):
                 k[key] = item.id
 
-        if "connectToOutput" in k and isinstance(k["connectToOutput"], (list, tuple)):
-            k["connectToOutput"] = [
+        if "connectToOutput" in k:
+            k["connect_to_output"] = k.pop("connectToOutput")
+
+        if "connect_to_output" in k and isinstance(
+            k["connect_to_output"], (list, tuple)
+        ):
+            k["connect_to_output"] = [
                 (i.id if isinstance(i, ElementProxy) else i)
-                for i in k["connectToOutput"]
+                for i in k["connect_to_output"]
             ]
         return ElementProxy(
             self,
@@ -267,6 +272,9 @@ class GStreamerPipeline:
 
     def on_barcode(self, codetype, data):
         print("Barcode: ", codetype, data)
+
+    def on_level_message(self, src, rms, level):
+        pass
 
     def stop(self):
         if self.ended:

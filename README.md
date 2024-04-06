@@ -151,15 +151,24 @@ n.stop()
 ### icemedia.iceflow.GStreamerPipeline
 This is the base class for making GStreamer apps
 
-#### GStreamerPipeline.add_element(elementType, name=None, connectToOutput=None,**kwargs)
+#### GStreamerPipeline.add_element(elementType, name=None connect_to_output=None, connect_when_available=None, \*\*kwargs)
 
 Adds an element to the pipe and returns a weakref proxy. Normally, this will connect to the last added
-element, but you can explicitly pass a an object to connect to. If the last object is a decodebin, it will be connected when a suitable pad
-on that is available.
+element, but you can explicitly pass a an object to connect to.
+
+if connect_when_available is True, then the elements will be connected later,
+at runtime, when the pad exists.  This is needed for some Gst elements that have dynamic pads.
 
 The `**kwargs` are used to set properties of the element.
 
-#### GStreamerPipeline.add_pil_capture(resolution, connectToOutput=None,buffer=1)
+This function returns an ElementProxy.  It acts like a GStreamer element but it is actually
+a proxy object, because the actual pipeline is in a separate background process.
+
+#### ElementProxy.set_property(key, value)
+
+Set a key on the element.
+
+#### GStreamerPipeline.add_pil_capture(resolution, connect_to_output=None,buffer=1)
 Adds a PILCapture object which acts like a video sink. It will buffer the most recent N frames, discarding as needed.
 
 ##### GStreamerPipeline.PILCapture.pull()
@@ -192,3 +201,15 @@ Return True if playing or paused
 
 #### GStreamerPipeline.seek(t=None, rate=None)
 Seek to a time, set playback rate, or both.
+
+
+#### GStreamerPipeline.on_level_message(self, src, rms, level):
+
+Subclass this if you want to add a level element and recieve info about the volume.
+
+#### GStreamerPipeline.on_multi_file_sink_file(self, fn, *a, **k):
+    A MultiFileSink made a new file
+
+#### GStreamerPipeline.def on_barcode(self, codetype, data):
+    A barcode reader element has detected a barcode
+

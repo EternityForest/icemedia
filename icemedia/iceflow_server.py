@@ -431,13 +431,15 @@ def getCaps(e):
     e.getSinks()[0].getNegotiatedCaps()
 
 
-def linkClosureMaker(self, src, dest, connectWhenAvailable, eid, deleteAfterUse=False):
+def linkClosureMaker(
+    self, src, dest, connect_when_available, eid, deleteAfterUse=False
+):
     "This has t be outside, it can't leak a ref to self's strong reference into the closure or it may leak memory"
 
     def linkFunction(element, pad, dummy):
         s = pad.query_caps(None).to_string()
-        if isinstance(connectWhenAvailable, str):
-            if connectWhenAvailable not in s:
+        if isinstance(connect_when_available, str):
+            if connect_when_available not in s:
                 return
 
         if eid in self().waitingCallbacks:
@@ -559,12 +561,12 @@ class GStreamerPipeline:
                 return
             call_rpc_if_exists("on_presence_value", [x])
 
-    def add_presence_detector(self, resolution, connectToOutput=None, regions=None):
+    def add_presence_detector(self, resolution, connect_to_output=None, regions=None):
         if self._pilmotiondetector:
             raise RuntimeError("Already have one of these")
 
         self._pilmotiondetectorcapture = self.add_pil_capture(
-            resolution, connectToOutput, method=0
+            resolution, connect_to_output, method=0
         )
         self._pilmotiondetector = PresenceDetector(
             self._pilmotiondetectorcapture, regions
@@ -1030,7 +1032,7 @@ class GStreamerPipeline:
             stopflag[0] = 1
 
     def add_pil_capture(
-        self, resolution=None, connectToOutput=None, buffer=1, method=1
+        self, resolution=None, connect_to_output=None, buffer=1, method=1
     ):
         "Return a video capture object.  Now that we use BG threads this is just used to save snapshots to file"
         if resolution:
@@ -1042,7 +1044,7 @@ class GStreamerPipeline:
                 + ",height="
                 + str(resolution[0]),
             )
-        self.add_element("videoconvert", connectToOutput=connectToOutput)
+        self.add_element("videoconvert", connect_to_output=connect_to_output)
         self.add_element("capsfilter", caps="video/x-raw,format=RGB")
 
         appsink = self.add_element("appsink", drop=True, sync=False, max_buffers=buffer)
@@ -1068,7 +1070,7 @@ class GStreamerPipeline:
             + "GREy8"
             if greyscale
             else "RGB",
-            connectToOutput=False,
+            connect_to_output=False,
         )
         self.add_element("videoconvert")
         self.add_element("videoscale")
@@ -1113,11 +1115,16 @@ class GStreamerPipeline:
         self,
         t,
         name=None,
+        connect_when_available=False,
         connectWhenAvailable=False,
+        connect_to_output=None,
         connectToOutput=None,
         sidechain=False,
         **kwargs,
     ):
+        # TODO: remove Legacy hack eventually
+        connect_to_output = connect_to_output or connectToOutput
+        connect_when_available = connect_when_available or connectWhenAvailable
         with self.lock:
             if not isinstance(t, str):
                 raise ValueError("Element type must be string")
@@ -1140,61 +1147,61 @@ class GStreamerPipeline:
             self.pipeline.add(e)
             op = []
             # May need to use an ID if its a remore command
-            if connectToOutput:
-                if not isinstance(connectToOutput, (list, tuple)):
-                    cto = [connectToOutput]
+            if connect_to_output:
+                if not isinstance(connect_to_output, (list, tuple)):
+                    cto = [connect_to_output]
                 else:
-                    cto = connectToOutput
+                    cto = connect_to_output
 
-                for connectToOutput in cto:
-                    if connectToOutput is not False:
-                        if isinstance(connectToOutput, int):
-                            connectToOutput = elementsByShortId[connectToOutput]
+                for connect_to_output in cto:
+                    if connect_to_output is not False:
+                        if isinstance(connect_to_output, int):
+                            connect_to_output = elementsByShortId[connect_to_output]
 
-                        if id(connectToOutput) not in self.elementTypesById:
+                        if id(connect_to_output) not in self.elementTypesById:
                             raise ValueError(
                                 "Cannot connect to the output of: "
-                                + str(connectToOutput)
+                                + str(connect_to_output)
                                 + ", no such element in pipeline."
                             )
-                        op.append(connectToOutput)
+                        op.append(connect_to_output)
             else:
                 # One auto connect
-                if connectToOutput is None:
+                if connect_to_output is None:
                     op = [None]
 
-            for connectToOutput in op:
+            for connect_to_output in op:
                 # Element doesn't have an input pad, we want this to be usable as a fake source to go after a real source if someone
                 # wants to use it as a effect
                 if t == "audiotestsrc":
-                    connectToOutput = False
+                    connect_to_output = False
 
                 # This could be the first element
-                if self.elements and (connectToOutput is not False):
-                    connectToOutput = connectToOutput or self.elements[-1]
+                if self.elements and (connect_to_output is not False):
+                    connect_to_output = connect_to_output or self.elements[-1]
 
                     # Fakesinks have no output, we automatically don't connect those
-                    if self.elementTypesById[id(connectToOutput)] == "fakesink":
-                        connectToOutput = False
+                    if self.elementTypesById[id(connect_to_output)] == "fakesink":
+                        connect_to_output = False
 
                     # Decodebin doesn't have a pad yet for some awful reason
                     elif (
-                        self.elementTypesById[id(connectToOutput)] == "decodebin"
-                    ) or connectWhenAvailable:
+                        self.elementTypesById[id(connect_to_output)] == "decodebin"
+                    ) or connect_when_available:
                         eid = time.time()
                         f = linkClosureMaker(
                             weakref.ref(self),
-                            connectToOutput,
+                            connect_to_output,
                             e,
-                            connectWhenAvailable,
+                            connect_when_available,
                             eid,
                         )
 
                         self.waitingCallbacks[eid] = f
                         # Dummy 1 param because some have claimed to get segfaults without
-                        connectToOutput.connect("pad-added", f, 1)
+                        connect_to_output.connect("pad-added", f, 1)
                     else:
-                        link(connectToOutput, e)
+                        link(connect_to_output, e)
 
             # Sidechain means don't set this element as the
             # automatic thing that the next entry links to
