@@ -110,7 +110,7 @@ icemedia.jack_tools.start_managing()
 class Player(icemedia.iceflow.GstreamerPipeline):
     def __init__(self):
         icemedia.iceflow.GstreamerPipeline.__init__(self, realtime=False)
-        self.sink = self.add_element("audiotestsrc")
+        self.src = self.add_element("audiotestsrc")
         self.sink = self.add_element("jackaudiosink", client_name="JackTest", connect=0)
 
 p = Player()
