@@ -1,10 +1,10 @@
 import time
-import iceflow.iceflow
+import icemedia.iceflow
 
 
-class NoiseWindow(iceflow.iceflow.GstreamerPipeline):
+class NoiseWindow(icemedia.iceflow.GstreamerPipeline):
     def __init__(self):
-        iceflow.iceflow.GstreamerPipeline.__init__(self)
+        icemedia.iceflow.GstreamerPipeline.__init__(self)
         self.add_element("videotestsrc", pattern="snow")
         self.add_element("autovideosink")
 

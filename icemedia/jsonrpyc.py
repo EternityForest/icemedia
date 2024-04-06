@@ -329,10 +329,11 @@ class RPC(object):
                     if isinstance(result, Exception):
                         raise result
                     return result
-                    if timeout:
-                        elapsed = time.monotonic() - starting_time
-                        if elapsed > timeout:
-                            raise TimeoutError("RPC Request timed out")
+
+                if timeout:
+                    elapsed = time.monotonic() - starting_time
+                    if elapsed > timeout:
+                        raise TimeoutError("RPC Request timed out")
 
                 time.sleep(block)
 
@@ -341,7 +342,12 @@ class RPC(object):
         Handles an incoming *line* and dispatches the parsed object to the request, response, or
         error handlers.
         """
-        obj = json.loads(line)
+        try:
+            obj = json.loads(line)
+        except json.decoder.JSONDecodeError:
+            if "BAD JSON" not in line:
+                print(f"BAD JSON {line}")
+            return
 
         # dispatch to the correct handler
         if "method" in obj:

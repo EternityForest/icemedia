@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="iceflow",
+    name="icemedia",
     version="0.1.0",
     author="Daniel Dunn",
     author_email="dannydunn@eternityforest.com",
@@ -20,7 +20,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.6",
-    install_requires=["JACK-Client"],
+    install_requires=["JACK-Client", "python_mpv_jsonipc", "scullery"],
 )
 
 

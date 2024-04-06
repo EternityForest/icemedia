@@ -3,7 +3,7 @@ import random
 import unittest
 import time
 import os
-import iceflow.iceflow
+import icemedia.iceflow
 import weakref
 
 testmedia = os.path.join(
@@ -11,9 +11,9 @@ testmedia = os.path.join(
 )
 
 
-class Player(iceflow.iceflow.GstreamerPipeline):
+class Player(icemedia.iceflow.GstreamerPipeline):
     def __init__(self, file):
-        iceflow.iceflow.GstreamerPipeline.__init__(self, realtime=False)
+        icemedia.iceflow.GstreamerPipeline.__init__(self, realtime=False)
 
         self.src = self.add_element("filesrc", location=file)
 
@@ -45,11 +45,11 @@ class TestAudio(unittest.TestCase):
             gc.collect()
         for i in range(150):
             time.sleep(0.1)
-            if len(iceflow.iceflow.pipes) == 0:
+            if len(icemedia.iceflow.pipes) == 0:
                 break
         gc.collect()
 
-        self.assertEqual(len(iceflow.iceflow.pipes), 0)
+        self.assertEqual(len(icemedia.iceflow.pipes), 0)
 
     def test_play(self):
         # Test for segfault-ery
@@ -72,11 +72,11 @@ class TestAudio(unittest.TestCase):
 
         for i in range(150):
             time.sleep(0.1)
-            if len(iceflow.iceflow.pipes) == 0:
+            if len(icemedia.iceflow.pipes) == 0:
                 break
         gc.collect()
 
-        self.assertEqual(len(iceflow.iceflow.pipes), 0)
+        self.assertEqual(len(icemedia.iceflow.pipes), 0)
 
     def test_seekpastend(self):
         p = Player(testmedia)
@@ -92,8 +92,8 @@ class TestAudio(unittest.TestCase):
         gc.collect()
         for i in range(150):
             time.sleep(0.1)
-            if len(iceflow.iceflow.pipes) == 0:
+            if len(icemedia.iceflow.pipes) == 0:
                 break
         gc.collect()
 
-        self.assertEqual(len(iceflow.iceflow.pipes), 0)
+        self.assertEqual(len(icemedia.iceflow.pipes), 0)

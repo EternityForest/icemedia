@@ -42,19 +42,19 @@ When jack is started or restarted
 Start the worker thread and enable management functions
 
 
-### iceflow.iceflow module
+### icemedia.iceflow module
 
 
 This example shows a window full of noise
 
 ```python
 import time
-import iceflow.iceflow
+import icemedia.iceflow
 
 
-class NoiseWindow(iceflow.iceflow.GstreamerPipeline):
+class NoiseWindow(icemedia.iceflow.GstreamerPipeline):
     def __init__(self):
-        iceflow.iceflow.GstreamerPipeline.__init__(self)
+        icemedia.iceflow.GstreamerPipeline.__init__(self)
         self.add_element("videotestsrc", pattern="snow")
         self.add_element("autovideosink")
 
@@ -68,7 +68,7 @@ time.sleep(5)
 n.stop()
 ````
 
-### iceflow.iceflow.GStreamerPipeline
+### icemedia.iceflow.GStreamerPipeline
 This is the base class for making GStreamer apps
 
 #### GStreamerPipeline.add_element(elementType, name=None, connectToOutput=None,**kwargs)
