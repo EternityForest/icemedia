@@ -183,7 +183,7 @@ class GStreamerPipeline:
         close_fds(self.worker)
         try:
             self.rpc.stdin.close()
-        except:
+        except Exception:
             pass
 
     def __del__(self):
@@ -292,7 +292,7 @@ class GStreamerPipeline:
             close_fds(self.worker)
             try:
                 self.rpc.stdin.close()
-            except:
+            except Exception:
                 pass
 
         except Exception:
@@ -302,7 +302,7 @@ class GStreamerPipeline:
             close_fds(self.worker)
             try:
                 self.rpc.stdin.close()
-            except:
+            except Exception:
                 pass
             workers.do(self.worker.wait)
 

@@ -509,7 +509,7 @@ class MPVBackend(SoundWrapper):
             return False
 
     def wait(self, channel="PRIMARY"):
-        "Block until any sound playing on a channel is finished"
+        "Block until any sound playing on a channel is playing"
         try:
             self.runningSounds[channel].wait()
         except KeyError:
