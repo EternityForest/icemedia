@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="icemedia",
-    version="0.1.0",
+    version="0.1.1",
     author="Daniel Dunn",
     author_email="dannydunn@eternityforest.com",
     description="A GStreamer wrapper with JACK connection management",
