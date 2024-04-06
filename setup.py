@@ -20,7 +20,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.6",
-    install_requires=["JACK-Client", "python_mpv_jsonipc", "scullery"],
+    install_requires=["JACK-Client", "scullery"],
 )
 
 
