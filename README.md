@@ -6,6 +6,10 @@ More comfortable wrapper for gstreamer and JACK
 
 This submodule requires pyjack, and of course Jack.
 
+#### iceflow.jack.start_managing()
+
+Call this to try to connect to the JACK server.  None of the other commands will work until you do this.
+
 
 #### iceflow.jack.Airwire(from,to)
 Return an Airwire object. This is a declaration that you want to connect two clients or ports and keep them connected.

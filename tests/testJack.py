@@ -4,6 +4,7 @@ import time
 import iceflow.jack_tools
 import iceflow.iceflow
 
+"Only works if your device names match, may need to change it"
 
 iceflow.jack_tools.start_managing()
 
@@ -12,7 +13,7 @@ class Player(iceflow.iceflow.GstreamerPipeline):
     def __init__(self):
         iceflow.iceflow.GstreamerPipeline.__init__(self, realtime=False)
         self.sink = self.add_element("audiotestsrc")
-        self.sink = self.add_element("jackaudiosink", client_name="JackTest")
+        self.sink = self.add_element("jackaudiosink", client_name="JackTest", connect=0)
 
 
 class TestJackAudio(unittest.TestCase):
@@ -23,7 +24,7 @@ class TestJackAudio(unittest.TestCase):
         p.start()
 
         print("You should hear noise")
-        aw = iceflow.jack_tools.Airwire("JackTest", "system")
+        aw = iceflow.jack_tools.Airwire("JackTest", "Built-in Audio Analog Stereo")
         aw.connect()
         time.sleep(1)
         print("No more noise")

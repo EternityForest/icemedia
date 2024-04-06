@@ -430,6 +430,7 @@ def find_real():
     global realConnections, _realConnections
     with lock:
         p = _jackclient.get_ports(is_output=True)
+
         pl = {}
         for i in p:
             try:
@@ -440,6 +441,12 @@ def find_real():
         with portsListLock:
             _realConnections = pl
             realConnections = _realConnections.copy()
+
+            p = _jackclient.get_ports()
+            # First time, get the initial list
+            if not portsList:
+                for i in p:
+                    portsList[i.name] = i
 
 
 errlog = []
@@ -859,8 +866,8 @@ def start_managing(p=None, n=None):
 
         try:
             find_real()
-        except:
-            pass
+        except Exception:
+            log.exception("Error getting initial jack graph info")
 
         # Stop the old thread if needed
         _reconnecterThreadObjectStopper[0] = 0
