@@ -11,18 +11,25 @@ pip install icemedia
 
 ## icemedia.sound_player
 
+### Example
+```python
+import icemedia.sound_player
 
-### icemedia.sound_player.sound
+testmedia = "YourAudioFileHere.mp3"
 
-The icemedia.sound_player.sound uses MPV to play sounds
+icemedia.sound_player.play_sound(testmedia)
+time.sleep(3)
+```
+
+The icemedia.sound_player.sound uses MPV to play sounds, so it supports almost any file.
 
 
-#### icemedia.sound_player.sound.preload(filename,output="@auto")
+#### icemedia.sound_player.preload(filename,output="@auto")
 Spins up a paused player for that filename and player. Garbage collecting old cache entries is handled for you.
 Will be used when sound.play is called for the same filename and output.
 
 
-#### icemedia.sound_player.sound.fade_to(self,file,length=1.0, block=False, detach=True, handle="PRIMARY",**kwargs):
+#### icemedia.sound_player.fade_to(self,file,length=1.0, block=False, detach=True, handle="PRIMARY",**kwargs):
 
 Fades the current sound on a given channel to the file. **kwargs aare equivalent to those on playSound.
 
@@ -34,7 +41,7 @@ so it only makes sense if fading to silence).
 Fading is perceptually linear.
 
 
-#### icemedia.sound_player.sound.play(filename,handle="PRIMARY",volume=1,start=0,end=-0.0001, output=None,fs=False,extraPaths=\[\])
+#### icemedia.sound_player.play(filename,handle="PRIMARY",volume=1,start=0,end=-0.0001, output=None,fs=False,extraPaths=\[\])
 
 The handle parameter lets you name the new sound instance to
 stop it later or set volume.
@@ -53,15 +60,15 @@ Output is a jack client or port if JACK is running.  Currently only the default
 outout works on non-jack systems.
 
 
-#### icemedia.sound_player.sound.stop(handle="PRIMARY")
+#### icemedia.sound_player.stop(handle="PRIMARY")
 
 Stop a sound by handle.
 
-#### icemedia.sound_player.sound.stop_all()
+#### icemedia.sound_player.stop_all()
 
 Stop all currently playing sounds.
 
-#### icemedia.sound_player.sound.is_playing(handle="PRIMARY")
+#### icemedia.sound_player.is_playing(handle="PRIMARY")
 
 Return true if a sound with handle handle is playing. Note that the
 sound might finish before you actually get around to doing anything with
@@ -69,15 +76,15 @@ the value. If using the dummy backend because a backend is not
 installed, result is undefined, but will not be an error, and will be a
 boolean value. If a sound is paused, will return True anyway.
 
-#### icemedia.sound_player.sound.setvol(vol,handle="PRIMARY")
+#### icemedia.sound_player.setvol(vol,handle="PRIMARY")
 
 Set the volume of a sound. Volume goes from 0 to 1.
 
-#### icemedia.sound_player.sound.pause(handle="PRIMARY")
+#### icemedia.sound_player.pause(handle="PRIMARY")
 
 Pause a sound. Does nothing if already paused.
 
-#### icemedia.sound_player.sound.resume(handle="PRIMARY")
+#### icemedia.sound_player.resume(handle="PRIMARY")
 
 Resume a paused a sound. Does nothing if not paused.
 
@@ -85,6 +92,41 @@ Resume a paused a sound. Does nothing if not paused.
 ## icemedia.jack module
 
 This submodule requires pyjack, and of course Jack.
+
+
+### Example
+This uses both JACK and GStreamer
+
+```python
+import time
+import icemedia.jack_tools
+import icemedia.iceflow
+
+"Only works if your device names match, may need to change Built-in Audio Analog Stereo to something else"
+
+icemedia.jack_tools.start_managing()
+
+
+class Player(icemedia.iceflow.GstreamerPipeline):
+    def __init__(self):
+        icemedia.iceflow.GstreamerPipeline.__init__(self, realtime=False)
+        self.sink = self.add_element("audiotestsrc")
+        self.sink = self.add_element("jackaudiosink", client_name="JackTest", connect=0)
+
+p = Player()
+p.start()
+
+print("You should hear noise")
+aw = icemedia.jack_tools.Airwire("JackTest", "Built-in Audio Analog Stereo")
+aw.connect()
+time.sleep(1)
+print("No more noise")
+aw.disconnect()
+
+del aw
+gc.collect()
+time.sleep(1)
+```
 
 ### icemedia.jack.start_managing()
 
@@ -108,7 +150,8 @@ Disconnect.
 
 ### Message Bus activity
 
-This submodule posts the following messages to the scullery
+This submodule posts the following messages to the [Scullery](https://github.com/EternityForest/scullery) message bus.
+
 #### /system/jack/newport
  A PortInfo object with a .name, isInput, and isOutput property gets posted here whenever a new port is added to JACK.
 
