@@ -58,9 +58,6 @@ class NoiseWindow(iceflow.iceflow.GstreamerPipeline):
         self.add_element("videotestsrc", pattern="snow")
         self.add_element("autovideosink")
 
-    def onMessage(self, src, name, structure):
-        print("Got Message: "+name+" from "+str(src))
-
 
 n = NoiseWindow()
 n.start()

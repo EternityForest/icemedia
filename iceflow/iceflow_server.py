@@ -311,7 +311,7 @@ autorunMainloop = True
 mainContext = None
 
 
-def doesElementExist(n):
+def does_element_exist(n):
     n = Gst.ElementFactory.make(n)
     if n:
         pass  # n.unref()
@@ -395,17 +395,17 @@ def makeWeakrefPoller(selfref, exitSignal):
 
                     elif msg.type == Gst.MessageType.EOS:
                         if msg.seqnum != seq_num:
-                            self.on_eos(self.bus, msg, None)
+                            self._on_eos(self.bus, msg, None)
 
                     elif msg.type == Gst.MessageType.SEGMENT_DONE:
                         if msg.seqnum != seq_num:
-                            self.on_segment_done()
+                            self._on_segment_done()
 
-                    self.on_message(self.bus, msg, None)
+                    self._on_message(self.bus, msg, None)
 
                     seq_num = msg.seqnum
                 except Exception:
-                    logging.exception("Err in pipeline:" + self.name)
+                    sys.stderr.write(traceback.format_exc())
                 finally:
                     pass
             else:
@@ -505,14 +505,14 @@ class GStreamerPipeline:
         # 1 is dummy user data, because some have reported segfaults if it is missing
         # Note that we keep strong refs to the functions, so they don't go away when we unregister,
         # Leading to a segfault in libffi because of a race condition
-        self._onmessage = wrfunc(weakref.WeakMethod(self.on_message))
-        self.pgbcobj = self.bus.connect("message", self._onmessage, 1)
+        self._on_message_wr = wrfunc(weakref.WeakMethod(self._on_message))
+        self.pgbcobj = self.bus.connect("message", self._on_message_wr, 1)
 
-        self._oneos = wrfunc(weakref.WeakMethod(self.on_eos))
-        self.pgbcobj2 = self.bus.connect("message::eos", self._oneos, 1)
+        self._on_eos_wr = wrfunc(weakref.WeakMethod(self._on_eos))
+        self.pgbcobj2 = self.bus.connect("message::eos", self._on_eos_wr, 1)
 
-        self._onerror = wrfunc(weakref.WeakMethod(self.on_error))
-        self.pgbcobj3 = self.bus.connect("message::error", self._onerror, 1)
+        self._onerror_wr = wrfunc(weakref.WeakMethod(self.on_error))
+        self.pgbcobj3 = self.bus.connect("message::error", self._onerror_wr, 1)
 
         self.name = name
 
@@ -559,7 +559,7 @@ class GStreamerPipeline:
                 return
             call_rpc_if_exists("on_presence_value", [x])
 
-    def addPresenceDetector(self, resolution, connectToOutput=None, regions=None):
+    def add_presence_detector(self, resolution, connectToOutput=None, regions=None):
         if self._pilmotiondetector:
             raise RuntimeError("Already have one of these")
 
@@ -703,15 +703,15 @@ class GStreamerPipeline:
             return e
 
     # Low level wrapper just for filtering out args we don't care about
-    def on_eos(self, *a, **k):
+    def _on_eos(self, *a, **k):
         with self.lock:
-            self.onEOS()
+            self.on_eos()
 
-    def onEOS(self):
-        self.onStreamFinished()
-        call_rpc_if_exists("onStreamFinished", [])
+    def on_eos(self):
+        self.on_stream_finished()
+        call_rpc_if_exists("on_stream_finished", [])
 
-    def onStreamFinished(self):
+    def on_stream_finished(self):
         pass
 
     def __del__(self):
@@ -734,10 +734,10 @@ class GStreamerPipeline:
         if not self._stopped:
             self.stop()
 
-    def on_message(self, bus, message, userdata):
+    def _on_message(self, bus, message, userdata):
         s = message.get_structure()
         if s:
-            self.onMessage(message.src, s.get_name(), s)
+            self.on_message(message.src, s.get_name(), s)
 
         return True
 
@@ -748,11 +748,11 @@ class GStreamerPipeline:
     #     call_rpc_if_exists("_on_appsink_data", [str(user_data), base64.b64encode(buffer_map.data).decode()])
     #     return Gst.FlowReturn.OK
 
-    def onMessage(self, src, name, s):
+    def on_message(self, src, name, s):
         if s.get_name() == "level":
             rms = sum([i for i in s["rms"]]) / len(s["rms"])
             decay = sum([i for i in s["decay"]]) / len(s["decay"])
-            call_rpc_if_exists("onLevelMessage", [str(src), rms, decay])
+            call_rpc_if_exists("on_level_message", [str(src), rms, decay])
 
         elif s.get_name() == "motion":
             if s.has_field("motion_begin"):
@@ -762,7 +762,7 @@ class GStreamerPipeline:
 
         elif s.get_name() == "GstVideoAnalyse":
             call_rpc_if_exists(
-                "onVideoAnalyze",
+                "on_video_analyze",
                 [
                     {
                         "luma-average": s.get_double("luma-average")[1],
@@ -778,7 +778,7 @@ class GStreamerPipeline:
             )
 
         elif s.get_name() == "GstMultiFileSink":
-            call_rpc_if_exists("onMultiFileSink", [""])
+            call_rpc_if_exists("on_multi_file_sink", [""])
 
         elif s.get_name() == "pocketsphynx":
             if s.get_value("hypothesis"):
@@ -794,15 +794,15 @@ class GStreamerPipeline:
         with self.lock:
             logging.debug("Error {}: {}, {}".format(msg.src.name, *msg.parse_error()))
 
-    def on_segment_done(self, *a):
+    def _on_segment_done(self, *a):
         with self.lock:
-            self.onSegmentDone()
+            self.on_segment_done()
             return True
 
-    def onSegmentDone(self):
+    def on_segment_done(self):
         # Called when a segment finishes playback, but NOT whem a segment ends because you did a seek to a new segment,
         # As that is usually not what you want when doing seamless loops.
-        call_rpc_if_exists("onSegmentDone", [])
+        call_rpc_if_exists("on_segment_done", [])
 
     def _waitForState(self, s, timeout=10):
         t = time.monotonic()
@@ -1086,25 +1086,6 @@ class GStreamerPipeline:
             )
 
         return PILSource(appsrc, greyscale)
-
-    def addAppSink(self, connectToOutput=False, buffer=1):
-        "Return a video capture object"
-
-        appsink = self.add_element(
-            "appsink",
-            drop=True,
-            sync=False,
-            max_buffers=buffer,
-            connectToOutput=connectToOutput,
-        )
-
-        return AppSink(appsink)
-
-    def addAppSrc(self, connectToOutput=False, buffer=1, caps=""):
-        "Return a video capture object"
-
-        appsrc = self.add_element("appsrc", caps=caps, connectToOutput=connectToOutput)
-        return AppSource(appsrc)
 
     def pull_buffer(self, element, timeout=0.1):
         if not self.appsink:
