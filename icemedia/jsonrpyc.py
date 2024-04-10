@@ -280,7 +280,7 @@ class RPC(object):
         args: tuple[Any] = (),
         kwargs: dict | None = None,
         callback: Callable | None = None,
-        block: int = 0,
+        block: float = 0,
         timeout: float = 0,
     ) -> None:
         """

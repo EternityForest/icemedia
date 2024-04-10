@@ -122,7 +122,11 @@ class GStreamerPipeline:
             for i in range(5):
                 try:
                     self.worker = Popen(
-                        ["python3", f], stdout=PIPE, stdin=PIPE, stderr=STDOUT, env=env
+                        [sys.executable or "python3", f],
+                        stdout=PIPE,
+                        stdin=PIPE,
+                        stderr=STDOUT,
+                        env=env,
                     )
                     self.worker.stdin.flush()
                     break

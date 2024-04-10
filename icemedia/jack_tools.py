@@ -12,10 +12,8 @@ import threading
 import functools
 import os
 import time
-import threading
 import traceback
 import sys
-import weakref
 from .jsonrpyc import RPC
 from subprocess import PIPE, STDOUT, Popen
 
@@ -102,7 +100,7 @@ class PortInfo:
 
 class JackClientProxy:
     def __getattr__(self, attr):
-        if self.ended or not self.worker.poll() is None:
+        if self.ended or self.worker.poll() is not None:
             raise RuntimeError("This process is already dead")
         check_exclude()
 
@@ -133,18 +131,20 @@ class JackClientProxy:
         check_exclude()
 
         a = [i.name if isinstance(i, PortInfo) else i for i in a]
-        x = self.rpc.call("get_all_connections", args=a, kwargs=k, block=0.001)
+        x = self.rpc.call(
+            "get_all_connections", args=a, kwargs=k, block=0.001, timeout=25
+        )
         x = [PortInfo(**i) for i in x]
         return x
 
     def get_ports(self, *a, **k):
         check_exclude()
 
-        if self.ended or not self.worker.poll() is None:
+        if self.ended or self.worker.poll() is not None:
             raise RuntimeError("This process is already dead")
         try:
             a = [i.name if isinstance(i, PortInfo) else i for i in a]
-            x = self.rpc.call("get_ports", args=a, kwargs=k, block=0.001)
+            x = self.rpc.call("get_ports", args=a, kwargs=k, block=0.001, timeout=25)
             x = [PortInfo(**i) for i in x]
             return x
 
@@ -263,10 +263,10 @@ class JackClientProxy:
             return
 
         self.ended = True
-        if not self.worker.poll() is None:
+        if self.worker.poll() is not None:
             return
         try:
-            x = self.rpc.call("close")
+            x = self.rpc.call("close", timeout=15)
             self.rpc.stopFlag = True
         except Exception:
             self.rpc.stopFlag = True
@@ -302,12 +302,16 @@ class JackClientProxy:
             )
         else:
             self.worker = Popen(
-                ["python3", f], stdout=PIPE, stdin=PIPE, stderr=STDOUT, env=env
+                [sys.executable or "python3", f],
+                stdout=PIPE,
+                stdin=PIPE,
+                stderr=STDOUT,
+                env=env,
             )
         self.rpc = RPC(
             target=self, stdin=self.worker.stdout, stdout=self.worker.stdin, daemon=True
         )
-        self.rpc.call("init")
+        self.rpc.call("init", timeout=15)
 
     def print(self, s):
         print(s)
@@ -492,7 +496,7 @@ class MonoAirwire:
             except KeyError:
                 pass
 
-            if x and not x is self:
+            if x and x is not self:
                 return
 
         try:
@@ -644,7 +648,7 @@ class MultichannelAirwire(MonoAirwire):
             except KeyError:
                 pass
 
-            if x and not x is self:
+            if x and x is not self:
                 return
 
         if portsListLock.acquire(timeout=10):
@@ -749,7 +753,7 @@ class CombiningAirwire(MultichannelAirwire):
             except KeyError:
                 pass
 
-            if x and not x is self:
+            if x and x is not self:
                 return
 
         if lock.acquire(timeout=10):
@@ -800,7 +804,7 @@ def Airwire(f, t, force_combining=False):
     elif f == None or t == None:
         return MonoAirwire(None, None)
     elif ":" in f:
-        if not ":" in t:
+        if ":" not in t:
             return CombiningAirwire(f, t)
         return MonoAirwire(f, t)
     else:
@@ -908,7 +912,6 @@ firstConnect = False
 
 def _checkJackClient(err=True):
     global _jackclient, realConnections, postedCheck, firstConnect
-    import jack
 
     if lock.acquire(timeout=10):
         try:
@@ -1014,9 +1017,9 @@ def get_port_names_with_aliases(*a, **k):
             x = _jackclient.get_ports(*a, **k)
             for i in x:
                 for j in i.aliases:
-                    if not j in ports:
+                    if j not in ports:
                         ports.append(j)
-                if not i.name in ports:
+                if i.name not in ports:
                     ports.append(i.name)
             return ports
         finally:
