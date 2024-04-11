@@ -35,11 +35,9 @@ jackChannels = {}
 
 stopflag = [0]
 
-# Overridden later
-print = print
-
 
 def dummy_func(*a, **k):
+    _ = a, k
     "RPC replaces this with the thing it calls"
 
 
@@ -288,14 +286,11 @@ def link(a, b):
             pass  # b.unref()
 
 
-def elementInfo(e):
-    r = Gst.Registry.get()  # noqa
-
-
 elementsByShortId = weakref.WeakValueDictionary()
 
 
 def Element(n, name=None):
+    _ = name
     e = Gst.ElementFactory.make(n, None)
     elementsByShortId[id(e)] = e
     if e:
@@ -378,7 +373,7 @@ def makeWeakrefPoller(selfref, exitSignal):
                             try:
                                 with self.seeklock:
                                     self.pipeline.set_state(Gst.State.NULL)
-                            except Exception:
+                            except Exception:  # noqa
                                 pass
                             self._waitForState(Gst.State.NULL, 3600000)
 
@@ -435,8 +430,10 @@ def linkClosureMaker(
     self, src, dest, connect_when_available, eid, deleteAfterUse=False
 ):
     "This has t be outside, it can't leak a ref to self's strong reference into the closure or it may leak memory"
+    _ = src
 
     def linkFunction(element, pad, dummy):
+        _ = dummy
         s = pad.query_caps(None).to_string()
         if isinstance(connect_when_available, str):
             if connect_when_available not in s:
@@ -535,7 +532,7 @@ class GStreamerPipeline:
         self.startTime = 0
 
         def dummy(*a, **k):
-            pass
+            _ = (a, k)
 
         if realtime:
             self._syncmessage = wrfunc(
@@ -694,8 +691,8 @@ class GStreamerPipeline:
                         log.exception("Error setting realtime priority")
             return Gst.BusSyncReply.PASS
         except Exception:
-            return Gst.BusSyncReply.PASS
             print(traceback.format_exc())
+            return Gst.BusSyncReply.PASS
 
     def makeElement(self, n, name=None):
         with self.lock:
@@ -706,6 +703,7 @@ class GStreamerPipeline:
 
     # Low level wrapper just for filtering out args we don't care about
     def _on_eos(self, *a, **k):
+        _ = (a, k)
         with self.lock:
             self.on_eos()
 
@@ -737,6 +735,7 @@ class GStreamerPipeline:
             self.stop()
 
     def _on_message(self, bus, message, userdata):
+        _ = bus, userdata
         s = message.get_structure()
         if s:
             self.on_message(message.src, s.get_name(), s)
@@ -793,6 +792,7 @@ class GStreamerPipeline:
                 )
 
     def on_error(self, bus, msg, userdata):
+        _ = bus, userdata
         with self.lock:
             logging.debug("Error {}: {}, {}".format(msg.src.name, *msg.parse_error()))
 
@@ -1316,16 +1316,22 @@ def main():
     gstp = GStreamerPipeline()
     # Replace the dummy we put there for the linter
     rpc[0] = jsonrpyc.RPC(target=gstp)
-    # def print(*a):
-    #     rpc[0]("print", [str(a)])
 
     while 1:
         time.sleep(1)
 
         if (not check_pid(ppid)) or stopflag[0]:
+            try:
+                gstp.stop()
+            except Exception:  # noqa
+                pass
             sys.exit()
 
         if not os.getppid() == ppid:
+            try:
+                gstp.stop()
+            except Exception:  # noqa
+                pass
             return
 
 
