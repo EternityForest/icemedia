@@ -167,10 +167,10 @@ Start the worker thread and enable management functions
 
 ## icemedia.iceflow module
 
-This is a wrapper around GStreamer that handles a lot of the more obnoxious parts for you.  
-You'll need to install Gstreamer and it's bindings yourself, they are not in Pip.  
+This is a wrapper around GStreamer that handles a lot of the more obnoxious parts for you.
+You'll need to install Gstreamer and it's bindings yourself, they are not in Pip.
 
-To do this on debian-based systems, try these packages on apt, you only 
+To do this on debian-based systems, try these packages on apt, you only
 need the plugins you actually want to use. GStreamer also will use any LADSPA plugins it finds.
 
  - python3-gi
@@ -208,10 +208,13 @@ n.stop()
 ### icemedia.iceflow.GStreamerPipeline
 This is the base class for making GStreamer apps
 
-#### GStreamerPipeline.add_element(elementType, name=None connect_to_output=None, connect_when_available=None, \*\*kwargs)
+#### GStreamerPipeline.add_element(elementType, name=None connect_to_output=None, connect_when_available=None, auto_insert_audio_convert=False, \*\*kwargs)
 
 Adds an element to the pipe and returns a weakref proxy. Normally, this will connect to the last added
 element, but you can explicitly pass a an object to connect to.
+
+If auto_insert_audio_convert is set, then if connecting the elements fails,
+will retry with an audioconvert element in between.
 
 if connect_when_available is True, then the elements will be connected later,
 at runtime, when the pad exists.  This is needed for some Gst elements that have dynamic pads.

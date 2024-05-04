@@ -1119,6 +1119,7 @@ class GStreamerPipeline:
         connectWhenAvailable=False,
         connect_to_output=None,
         connectToOutput=None,
+        auto_insert_audio_convert=False,
         sidechain=False,
         **kwargs,
     ):
@@ -1201,7 +1202,16 @@ class GStreamerPipeline:
                         # Dummy 1 param because some have claimed to get segfaults without
                         connect_to_output.connect("pad-added", f, 1)
                     else:
-                        link(connect_to_output, e)
+                        try:
+                            link(connect_to_output, e)
+                        except Exception:
+                            if auto_insert_audio_convert:
+                                c = self.add_element(
+                                    "audioconvert", connect_to_output=connect_to_output
+                                )
+                                link(c, e)
+                            else:
+                                raise
 
             # Sidechain means don't set this element as the
             # automatic thing that the next entry links to

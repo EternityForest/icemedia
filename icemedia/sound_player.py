@@ -219,7 +219,7 @@ class PlayerHolder(object):
         self.player = p
         self.usesCounter = 0
         self.conf = [0]
-        self.isConfigured = False
+        self.is_configured = False
         self.lastvol = -99089798
         self.conf_speed = 1
         self.loop_conf = -1
@@ -273,14 +273,14 @@ class MPVBackend(SoundWrapper):
                     self.player = PlayerHolder(MPV())
 
             # Avoid somewhat slow RPC calls if we can
-            if not self.player.isConfigured:
+            if not self.player.is_configured:
                 cname = "kplayer" + str(time.monotonic()) + "_out"
                 self.player.player.vid = "no"
                 self.player.player.keep_open = "yes"
                 self.player.player.ao = "jack,pulse,alsa"
                 self.player.player.jack_name = cname
                 self.player.player.gapless_audio = "weak"
-                self.player.player.isConfigured = True
+                self.player.player.is_configured = True
 
             if speed != self.player.conf_speed:
                 self.player.player.audio_pitch_correction = False
