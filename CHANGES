@@ -1,6 +1,6 @@
 # Change Log
 
-# 0.1.13
+# 0.1.14
 - :bug: Fix proxy IDs being recycled
 - :sparkles: GStreamer now works correctly in .venv, at least on debian.
   
