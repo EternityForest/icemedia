@@ -1,5 +1,9 @@
 # Change Log
 
+# 0.1.13
+- :bug: Fix proxy IDs being recycled
+- :sparkles: GStreamer now works correctly in .venv, at least on debian.
+  
 # 0.1.12
 - :sparkles: Use a timeout on some background process actions
 - :bug: Don't run background process outside the virtualenv if started in one
