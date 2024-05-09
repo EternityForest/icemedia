@@ -9,11 +9,35 @@ import base64
 import os
 import threading
 import weakref
+import logging
 from typing import Optional
 from subprocess import PIPE, STDOUT
 from subprocess import Popen
 from scullery import workers
 from .jsonrpyc import RPC
+
+
+# Truly an awefullehaccken
+# Break out of venv to get to gstreamer
+# It's just that one package.  Literally everything else
+# Is perfectly fine. GStreamer doesn't do pip so we do this.
+
+try:
+    if os.environ.get("VIRTUAL_ENV"):
+        en = os.environ["VIRTUAL_ENV"]
+        p = os.path.join(
+            en,
+            "lib",
+            "python" + ".".join(sys.version.split(".")[:2]),
+            "site-packages",
+            "gi",
+        )
+        s = "/usr/lib/python3/dist-packages/gi"
+
+        if os.path.exists(s) and (not os.path.exists(p)):
+            os.symlink(s, p)
+except Exception:
+    logging.exception("Failed to do the gstreamer hack")
 
 
 def close_fds(p: Popen):
