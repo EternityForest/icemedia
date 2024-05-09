@@ -275,6 +275,9 @@ def link(a, b):
                 raise RuntimeError("Could not link: " + str(a) + str(b))
 
         else:
+            if a.srcpads and b.sinkpads:
+                if a.srcpads[0].peer == b.sinkpads[0]:
+                    raise RuntimeError("Elements already linked.")
             x = a.link(b)
 
             if not x:
@@ -474,7 +477,7 @@ class GStreamerPipeline:
         self.thread_started = False
         self.weakrefs = weakref.WeakValueDictionary()
 
-        self.proxyToElement = weakref.WeakValueDictionary()
+        self.proxies_to_elements = {}
 
         # This WeakValueDictionary is mostly for testing purposes
         pipes[id(self)] = self
@@ -1225,7 +1228,7 @@ class GStreamerPipeline:
             self.lastElementType = t
             p = weakref.proxy(e)
 
-            self.proxyToElement[id(p)] = e
+            self.proxies_to_elements[id(p)] = p
             # List it under the proxy as well
             self.elementTypesById[id(p)] = t
             elementsByShortId[id(p)] = e
