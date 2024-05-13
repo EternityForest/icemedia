@@ -348,5 +348,8 @@ class GStreamerPipeline:
     def on_presence_value(self, v):
         print(v)
 
+    def on_video_analyze(self, v):
+        print(v)
+
 
 GstreamerPipeline = GStreamerPipeline

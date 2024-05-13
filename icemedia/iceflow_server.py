@@ -771,6 +771,8 @@ class GStreamerPipeline:
                     {
                         "luma-average": s.get_double("luma-average")[1],
                         "luma-variance": s.get_double("luma-variance")[1],
+                        "luma_average": s.get_double("luma-average")[1],
+                        "luma_variance": s.get_double("luma-variance")[1],
                     }
                 ],
             )
