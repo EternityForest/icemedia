@@ -94,6 +94,11 @@ class ElementProxy:
         self.parent = weakref.ref(parent)
         self.id = obj_id
 
+    def get_property(self, p, max_wait=10) -> str | int | float | bool:
+        x = self.parent()
+        assert x
+        return x.get_property(self.id, p, max_wait=max_wait)  # type: ignore
+
     def set_property(self, p, v, max_wait=10):
         x = self.parent()
         assert x
@@ -115,7 +120,7 @@ pipes = weakref.WeakValueDictionary()
 
 class GStreamerPipeline:
     def __init__(self, *a, **k):
-        # -*- coding: utf-8 -*-
+        self.error_info_handlers = []
 
         # If del can't find this it would to an infinite loop
         self.worker: Optional[Popen] = None
@@ -185,6 +190,11 @@ class GStreamerPipeline:
                 return self.rpc_call(attr, args=a, kwargs=k, block=0.001, timeout=15)
             except Exception:
                 if self.worker:
+                    for i in self.error_info_handlers:
+                        try:
+                            i()
+                        except Exception as e:
+                            print(f"Error {e} in error_info_handler")
                     self.cleanup_popen()
                     workers.do(self.worker.wait)
                 raise
@@ -239,7 +249,7 @@ class GStreamerPipeline:
                 (i.id if isinstance(i, ElementProxy) else i)
                 for i in k["connect_to_output"]
             ]
-        return ElementProxy(
+        e = ElementProxy(
             self,
             self.rpc_call(
                 "add_elementRemote",
@@ -249,6 +259,20 @@ class GStreamerPipeline:
                 timeout=5,
             ),
         )
+
+        name = k.get("name", f"{element_name}_{id(e)}")
+
+        if element_name == "queue":
+
+            def f():
+                x = e.get_property("current-level-time")
+                if isinstance(x, (int, float)):
+                    x = x / 1000_000_000
+                    print(f"Queue {name} level: {x}s")
+
+            self.error_info_handlers.append(f)
+
+        return e
 
     def set_property(self, *a, max_wait=10, **k):
         # Probably Just Not Important enough to raise an error for this.
@@ -268,6 +292,21 @@ class GStreamerPipeline:
             self.rpc_call(
                 "set_property", args=a, kwargs=k, block=0.0001, timeout=max_wait
             ),
+        )
+
+    def get_property(self, e, p, max_wait=10):
+        # Probably Just Not Important enough to raise an error for this.
+        if self.ended or self.worker.poll() is not None:
+            print("Prop get in dead process")
+            self.ended = True
+            return
+
+        # convert element proxies to their ids for transmission
+        if isinstance(e, ElementProxy):
+            e = e.id
+
+        return self.rpc_call(
+            "get_property", args=[e, p], block=0.0001, timeout=max_wait
         )
 
     def add_pil_capture(self, *a, **k):

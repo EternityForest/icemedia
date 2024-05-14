@@ -1312,6 +1312,16 @@ class GStreamerPipeline:
             else:
                 element.set_property(prop[0], value)
 
+    def get_property(self, element, prop):
+        with self.lock:
+            p = elementsByShortId[element].get_property(prop)
+            if isinstance(p, bool):
+                return p
+            try:
+                return float(p)
+            except ValueError:
+                return str(p)
+
     def isActive(self):
         with self.lock:
             if self.pipeline.get_state(1000_000_000)[1] == Gst.State.PAUSED:

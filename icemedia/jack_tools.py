@@ -840,8 +840,10 @@ def work():
                     lock.release()
                 # _ensureConnections()
             else:
-                if _reconnecterThreadObjectStopper[0]:
-                    raise RuntimeError("Could not get lock,retrying in 5s")
+                failcounter += 1
+                if failcounter > 2:
+                    if _reconnecterThreadObjectStopper[0]:
+                        raise RuntimeError("Could not get lock,retrying in 5s")
 
                 else:
                     # Already stopping anyway, ignore

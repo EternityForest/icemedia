@@ -190,6 +190,11 @@ class JackClientProxy:
                         self.clientObj.connect(t, f)
                     else:
                         self.clientObj.connect(f, t)
+                except jack.JackErrorCode as e:
+                    if e.code == 17:
+                        pass
+                    else:
+                        print(traceback.format_exc())
                 except Exception:
                     print(traceback.format_exc())
             finally:
