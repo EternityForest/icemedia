@@ -127,7 +127,13 @@ class JackClientManager:
                     # log.debug("JACK port registered: "+port.name)
                     with portsListLock:
                         portsList[name] = p
-                    messagebus.post_message("/system/jack/newport", p)
+
+                    def g():
+                        # Seems to need tome to set up fully.
+                        time.sleep(0.5)
+                        messagebus.post_message("/system/jack/newport", p)
+
+                    workers.do(g)
                 else:
                     torm = []
                     with portsListLock:
@@ -783,7 +789,7 @@ def work():
                     _checkJackClient()
                 finally:
                     lock.release()
-                # _ensureConnections()
+                _ensureConnections()
             else:
                 failcounter += 1
                 if failcounter > 2:
@@ -1104,7 +1110,9 @@ def connect(f, t, ts=None):
                             assert _jackclient
                             _jackclient.connect(t, f)
                             break
-                        except TimeoutError:
+                        except jack.JackErrorCode as e:
+                            print(e)
+                        except Exception:
                             _checkJackClient()
                     with portsListLock:
                         try:
