@@ -14,23 +14,13 @@ import os
 import time
 import traceback
 import sys
-from .jsonrpyc import RPC
-from subprocess import PIPE, STDOUT, Popen
 
 
-def close_fds(p: Popen):
-    try:
-        p.stdin.close()
-    except Exception:
-        pass
-    try:
-        p.stdout.close()
-    except Exception:
-        pass
-    try:
-        p.stderr.close()
-    except Exception:
-        pass
+import jack
+
+
+def portToInfo(p):
+    return PortInfo(p.name, p.is_input, p.shortname, p.is_audio, list(p.aliases))
 
 
 @functools.cache
@@ -98,72 +88,32 @@ class PortInfo:
         }
 
 
-class JackClientProxy:
-    def __getattr__(self, attr):
-        if self.ended or self.worker.poll() is not None:
-            raise RuntimeError("This process is already dead")
-        check_exclude()
-
-        def f(*a, timeout=10, **k):
-            try:
-                # Can't serialize ports
-                a = [i.name if isinstance(i, PortInfo) else i for i in a]
-                x = self.rpc.call(attr, args=a, kwargs=k, block=0.001, timeout=timeout)
-                if isinstance(x, dict):
-                    x = PortInfo(**x)
-
-                return x
-            except TimeoutError:
-                if timeout > 8:
-                    print(traceback.format_exc())
-                    self.worker.terminate()
-                    self.worker.kill()
-                    close_fds(self.worker)
-                    workers.do(self.worker.wait)
-                raise
-            except Exception:
-                print(traceback.format_exc())
-                raise
-
-        return f
-
+class JackClientManager:
     def get_all_connections(self, *a, **k):
         check_exclude()
 
         a = [i.name if isinstance(i, PortInfo) else i for i in a]
-        x = self.rpc.call(
-            "get_all_connections", args=a, kwargs=k, block=0.001, timeout=25
-        )
-        x = [PortInfo(**i) for i in x]
+        x = self._client.get_all_connections(*a, **k)
+        x = [portToInfo(i) for i in x]
         return x
 
     def get_ports(self, *a, **k):
         check_exclude()
 
-        if self.ended or self.worker.poll() is not None:
-            raise RuntimeError("This process is already dead")
-        try:
-            a = [i.name if isinstance(i, PortInfo) else i for i in a]
-            x = self.rpc.call("get_ports", args=a, kwargs=k, block=0.001, timeout=25)
-            x = [PortInfo(**i) for i in x]
-            return x
+        a = [i.name if isinstance(i, PortInfo) else i for i in a]
+        x = self._client.get_ports(*a, **k)
+        x = [portToInfo(i) for i in x]
+        return x
 
-        except TimeoutError:
-            print(traceback.format_exc())
-            self.worker.terminate()
-            self.worker.kill()
-            close_fds(self.worker)
-            workers.do(self.worker.wait)
-            raise
+    def on_port_registered(self, port, registered):
+        name, is_input, shortname, is_audio, registered = (
+            port.name,
+            port.is_input,
+            port.shortname,
+            port.is_audio,
+            registered,
+        )
 
-    def __del__(self):
-        if self.worker:
-            self.worker.terminate()
-            self.worker.kill()
-            close_fds(self.worker)
-            workers.do(self.worker.wait)
-
-    def on_port_registered(self, name, is_input, shortname, is_audio, registered):
         def f():
             try:
                 global realConnections
@@ -200,11 +150,10 @@ class JackClientProxy:
         jackEventHandlingQueue.append(f)
         workers.do(handle_jack_event)
 
-    def on_port_connected(self, a_is_output, a_name, b_name, connected):
+    def on_port_connected(self, a, b, c):
+        a_is_output, a_name, b_name, connected = (a.is_output, a.name, b.name, c)
         # Whem things are manually dis_connected we don't
         # Want to always reconnect every time
-        if self.ended:
-            return
 
         def f():
             global realConnections
@@ -258,63 +207,46 @@ class JackClientProxy:
         jackEventHandlingQueue.append(f)
         workers.do(handle_jack_event)
 
-    def close(self):
-        if self.ended:
-            return
+    def connect(self, f, t):
+        t = self._client.get_port_by_name(t)
+        f = self._client.get_port_by_name(f)
 
-        self.ended = True
-        if self.worker.poll() is not None:
-            return
+        if not t.is_input:
+            x = t
+            t = f
+            f = x
         try:
-            x = self.rpc.call("close", timeout=15)
-            self.rpc.stopFlag = True
-        except Exception:
-            self.rpc.stopFlag = True
-            self.worker.terminate()
-            self.worker.kill()
-            close_fds(self.worker)
-            workers.do(self.worker.wait)
-            raise
+            self._client.connect(f, t)
+        except jack.JackErrorCode as e:
+            if e.code == 17:
+                pass
+            else:
+                raise
+
+    def disconnect(self, f, t):
+        t = self._client.get_port_by_name(t)
+        f = self._client.get_port_by_name(f)
+
+        if not t.is_input:
+            x = t
+            t = f
+            f = x
+
+        self._client.disconnect(f, t)
+
+    def close(self):
+        pass
 
     def __init__(self, *a, **k):
-        # -*- coding: utf-8 -*-
-        # If del can't find this it would to an infinite loop
-        self.worker = None
-
-        self.ended = False
-        f = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "jack_client_subprocess.py"
+        self._client = jack.Client(
+            "Overseer" + str(time.monotonic()), no_start_server=True
         )
-        env = {}
-        env.update(os.environ)
 
-        # Always use installed version.
-        # TODO this will cause using the old one
-        # if the new one isn't there, but is needed
-        # for nixos et al compatibility
-        if which("kaithem._jackmanager_server") and False:
-            self.worker = Popen(
-                ["kaithem._jackmanager_server"],
-                stdout=PIPE,
-                stdin=PIPE,
-                stderr=STDOUT,
-                env=env,
-            )
-        else:
-            self.worker = Popen(
-                [sys.executable or "python3", f],
-                stdout=PIPE,
-                stdin=PIPE,
-                stderr=STDOUT,
-                env=env,
-            )
-        self.rpc = RPC(
-            target=self, stdin=self.worker.stdout, stdout=self.worker.stdin, daemon=True
+        self._client.set_port_connect_callback(self.on_port_connected)
+        self._client.set_port_registration_callback(
+            self.on_port_registered, only_available=False
         )
-        self.rpc.call("init", timeout=15)
-
-    def print(self, s):
-        print(s)
+        self._client.activate()
 
 
 def handle_jack_event():
@@ -432,6 +364,7 @@ _realConnections = {}
 
 def find_real():
     global realConnections, _realConnections
+    assert _jackclient
     with lock:
         p = _jackclient.get_ports(is_output=True)
 
@@ -577,10 +510,14 @@ class MultichannelAirwire(MonoAirwire):
         Note that channel strips only have the main inputs but can have sends,
         so we have to distinguish them in the regex.
         """
+        global realConnections, _realConnections
         if not self.active:
             return
         f, t = self._getEndpoints()
+
         if not f:
+            return
+        if not t:
             return
         f = f.replace("*:", "")
         t = t.replace("*:", "")
@@ -651,6 +588,7 @@ class MultichannelAirwire(MonoAirwire):
             if x and x is not self:
                 return
 
+        inPorts = outPorts = None
         if portsListLock.acquire(timeout=10):
             try:
                 outPorts = sorted(
@@ -675,6 +613,9 @@ class MultichannelAirwire(MonoAirwire):
                 )
             finally:
                 portsListLock.release()
+
+        if not inPorts or not outPorts:
+            return
 
         if lock.acquire(timeout=10):
             try:
@@ -704,6 +645,8 @@ class CombiningAirwire(MultichannelAirwire):
             return
         f, t = self._getEndpoints()
         if not f:
+            return
+        if not t:
             return
         if lock.acquire(timeout=10):
             try:
@@ -742,6 +685,8 @@ class CombiningAirwire(MultichannelAirwire):
     def disconnect(self, force=False):
         f, t = self._getEndpoints()
         if not f:
+            return
+        if not t:
             return
 
         if not force:
@@ -801,7 +746,7 @@ def Airwire(f, t, force_combining=False):
         t = "dsfjgjdsfjgkl"
     if force_combining:
         return CombiningAirwire(f, t)
-    elif f == None or t == None:
+    elif f is None or t is None:
         return MonoAirwire(None, None)
     elif ":" in f:
         if ":" not in t:
@@ -866,7 +811,7 @@ def start_managing(p=None, n=None):
 
     with lock:
         try:
-            _jackclient = JackClientProxy()
+            _jackclient = JackClientManager()
         except Exception:
             log.exception("Error creating JACK client, retry later")
 
@@ -891,10 +836,12 @@ def start_managing(p=None, n=None):
 
 
 def stop_managing():
+    global _reconnecterThreadObject
+
     with lock:
         try:
             if _jackclient:
-                _jackclient.exit()
+                _jackclient._client.deactivate()
         except Exception:
             pass
         # Stop the old thread if needed
@@ -917,6 +864,7 @@ def _checkJackClient(err=True):
 
     if lock.acquire(timeout=10):
         try:
+            assert _jackclient
             t = _jackclient.get_ports()
 
             if not t:
@@ -939,7 +887,6 @@ def _checkJackClient(err=True):
                 print(traceback.format_exc())
 
             try:
-                _jackclient.close()
                 _jackclient = None
             except Exception:
                 pass
@@ -949,7 +896,7 @@ def _checkJackClient(err=True):
                 _realConnections = {}
 
             try:
-                _jackclient = JackClientProxy()
+                _jackclient = JackClientManager()
             except Exception:
                 if err:
                     log.exception("Error creating JACK client")
@@ -994,7 +941,6 @@ def get_ports(*a, max_wait=10, **k):
                     lastCheckedClientFromget_ports = time.monotonic()
                     workers.do(_checkJackClient)
                 return []
-            ports = []
             x = _jackclient.get_ports(*a, **k)
 
             with portsListLock:
@@ -1056,6 +1002,7 @@ def check_exclude():
 
 def disconnect(f, t):
     global realConnections
+    assert _jackclient
     if lock.acquire(timeout=30):
         try:
             if not is_connected(f, t):
@@ -1078,14 +1025,10 @@ def disconnect(f, t):
                     # For unknown reasons it is possible to completely clog up the jack client.
                     # We must make a new one and retry should this ever happen
                     try:
-                        _jackclient.disconnect(f, t, timeout=5)
+                        _jackclient.disconnect(f, t)
                         # subprocess.check_call(['pw-jack', 'jack_disconnect', f, t])
                         break
-                    except TimeoutError:
-                        if (i % 6) == 5:
-                            time.sleep(5)
-                        _jackclient.worker.kill()
-                        close_fds(_jackclient.worker)
+                    except Exception:
                         _checkJackClient()
 
                 with portsListLock:
@@ -1158,11 +1101,10 @@ def connect(f, t, ts=None):
                         # For unknown reasons it is possible to completely clog up the jack client.
                         # We must make a new one and retry should this ever happen
                         try:
-                            _jackclient.connect(t, f, timeout=10)
+                            assert _jackclient
+                            _jackclient.connect(t, f)
                             break
                         except TimeoutError:
-                            _jackclient.worker.kill()
-                            close_fds(_jackclient.worker)
                             _checkJackClient()
                     with portsListLock:
                         try:
