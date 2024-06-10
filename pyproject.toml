@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "icemedia"
+version = "0.1.6"
+description = "Media handling library with GStreamer wrapper, sound player, and Jack manager"
+authors = ["Daniel Dunn <dannydunn@eternityforest.com>"]
+license = "LGPLv2+"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+JACK-Client = "^0.5.4"
+scullery = "^0.1.19"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

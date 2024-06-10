@@ -212,6 +212,7 @@ class UnixSocket(threading.Thread):
         *callback(json_data)* is the function for recieving events.
         *quit_callback* is called when the socket connection dies.
         """
+        self.should_run = True
         self.ipc_socket = ipc_socket
         self.callback = callback
         self.quit_callback = quit_callback
@@ -225,6 +226,7 @@ class UnixSocket(threading.Thread):
 
     def stop(self, join=True):
         """Terminate the thread."""
+        self.should_run = False
         if self.socket is not None:
             try:
                 self.socket.shutdown(socket.SHUT_WR)
@@ -245,7 +247,7 @@ class UnixSocket(threading.Thread):
         """Process socket events. Do not run this directly. Use *start*."""
         data = b""
         try:
-            while True:
+            while self.should_run:
                 current_data = self.socket.recv(1024)
                 if current_data == b"":
                     break

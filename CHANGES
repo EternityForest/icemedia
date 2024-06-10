@@ -1,5 +1,10 @@
 # Change Log
 
+# 0.1.16
+- :bug: Sound player thread leak
+- :sparkles: Use Poetry
+
+
 # 0.1.15
 - :bug: luma-average key in video analysis should have been luma_average
   
