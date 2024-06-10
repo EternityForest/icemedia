@@ -374,6 +374,8 @@ class MPVBackend(SoundWrapper):
                                     if len(objectPool) < 4:
                                         objectPool.append(o)
                                         return
+                                    else:
+                                        o.player.terminate()
                                 o.player.stop()
 
                             workers.do(f)
@@ -383,7 +385,7 @@ class MPVBackend(SoundWrapper):
 
                     def f():
                         if p:
-                            p.player.stop()
+                            p.player.terminate()
 
                     workers.do(f)
 
@@ -394,7 +396,7 @@ class MPVBackend(SoundWrapper):
                             if len(objectPool) < 4:
                                 objectPool.append(p)
                             else:
-                                self.player.player.stop()
+                                p.player.terminate()
                 self.player = None
 
         def is_playing(self, refresh=False):
