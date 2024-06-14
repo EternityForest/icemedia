@@ -137,7 +137,7 @@ Call this to try to connect to the JACK server.  None of the other commands will
 Return an Airwire object. This is a declaration that you want to connect two clients or ports and keep them connected.
 If you try to connect a client to a single port, all outputs get mixed down. Likewise a port to a client duplicates to all inputs.
 
-They start in the dis_connected state.
+They start in the disconnected state.
 
 
 ### icemedia.jack.Airwire.connect()

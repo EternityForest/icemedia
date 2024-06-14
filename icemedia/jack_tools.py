@@ -158,7 +158,7 @@ class JackClientManager:
 
     def on_port_connected(self, a, b, c):
         a_is_output, a_name, b_name, connected = (a.is_output, a.name, b.name, c)
-        # Whem things are manually dis_connected we don't
+        # Whem things are manually disconnected we don't
         # Want to always reconnect every time
 
         def f():
@@ -204,7 +204,7 @@ class JackClientManager:
 
                 # def f():
                 #     if not connected:
-                #         log.debug("JACK port "+ a.name+" dis_connected from "+b.name)
+                #         log.debug("JACK port "+ a.name+" disconnected from "+b.name)
                 #     else:
                 #         log.debug("JACK port "+ a.name+" connected to "+b.name)
 
@@ -420,7 +420,7 @@ class MonoAirwire:
 
     def disconnect(self, force=True):
         global realConnections
-        self.dis_connected = True
+        self.disconnected = True
         try:
             del allConnections[self.orig, self.to]
         except Exception:

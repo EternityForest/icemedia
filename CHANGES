@@ -1,22 +1,30 @@
 # Change Log
 
-# 0.1.16
+## 0.1.17
+
+- :bug: Fix interrupting a fade with another fade
+
+## 0.1.16
+
 - :bug: Sound player thread leak
 - :sparkles: Use Poetry
 
+## 0.1.15
 
-# 0.1.15
 - :bug: luma-average key in video analysis should have been luma_average
   
-# 0.1.14
+## 0.1.14
+
 - :bug: Fix proxy IDs being recycled
 - :sparkles: GStreamer now works correctly in .venv, at least on debian.
   
-# 0.1.12
+## 0.1.12
+
 - :sparkles: Use a timeout on some background process actions
 - :bug: Don't run background process outside the virtualenv if started in one
 
 ## 0.1.1
+
 Fix legacy camelCase, with backwards compatibility for now.
 
 ## 0.1.0

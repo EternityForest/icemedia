@@ -566,10 +566,10 @@ class MPVBackend(SoundWrapper):
         start: float = 0,
         speed: float = 1,
     ):
-        x = self.runningSounds.pop(handle, None)
+        old_sound = self.runningSounds.pop(handle, None)
 
-        if x and not (length or winddown):
-            x.stop()
+        if old_sound and not (length or winddown):
+            old_sound.stop()
 
         # Allow fading to silence
         if file:
@@ -592,13 +592,24 @@ class MPVBackend(SoundWrapper):
         #    return
         if not (length or winddown or windup):
             return
+        loop_id = time.time()
+        self.loop_id = loop_id
+        try:
+            old_sound.loop_id = None
+        except Exception:
+            pass
 
         def f():
             t = time.monotonic()
             try:
-                v = x.volume
+                old_volume = old_sound.volume
             except Exception:
-                v = 0
+                old_volume = 0
+
+            try:
+                old_speed = old_sound.speed
+            except Exception:
+                old_speed = 0
 
             targetVol = 1
             while time.monotonic() - t < max(length, winddown, windup):
@@ -616,26 +627,34 @@ class MPVBackend(SoundWrapper):
 
                 tr = time.monotonic()
 
-                if x and x.player:
+                if old_sound and old_sound.player:
                     # Player might have gotten itself stopped by now
                     try:
-                        x.setVol(max(0, v * (1 - foratio)))
+                        old_sound.setVol(max(0, old_volume * (1 - foratio)))
 
                         if winddown:
                             wdratio = max(
                                 0, min(1, ((time.monotonic() - t) / winddown))
                             )
-                            x.set_speed(max(0.1, speed * (1 - wdratio)))
+                            old_sound.set_speed(max(0.1, old_speed * (1 - wdratio)))
                     except AttributeError:
                         print(traceback.format_exc())
 
                 if file and (handle in self.runningSounds):
-                    targetVol = self.runningSounds[handle].finalGain
-                    self.set_volume(min(1, targetVol * firatio), handle, final=False)
+                    # If another fade has taken over from this one,
+                    # self will be it's old_sound, it will take over
 
-                    if windup:
-                        wuratio = max(0, min(1, ((time.monotonic() - t) / windup)))
-                        self.set_speed(max(0.1, min(speed, wuratio * speed, 8)), handle)
+                    if self.loop_id:
+                        targetVol = self.runningSounds[handle].finalGain
+                        self.set_volume(
+                            min(1, targetVol * firatio), handle, final=False
+                        )
+
+                        if windup:
+                            wuratio = max(0, min(1, ((time.monotonic() - t) / windup)))
+                            self.set_speed(
+                                max(0.1, min(speed, wuratio * speed, 8)), handle
+                            )
 
                 # Don't overwhelm the backend with commands
                 time.sleep(max(1 / 48.0, time.monotonic() - tr))
@@ -651,8 +670,8 @@ class MPVBackend(SoundWrapper):
                 except Exception as e:
                     print(e)
 
-            if x:
-                x.stop()
+            if old_sound:
+                old_sound.stop()
 
         if block:
             f()
