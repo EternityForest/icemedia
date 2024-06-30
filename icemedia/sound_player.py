@@ -715,7 +715,7 @@ def stop_all_sounds():
 
 
 def test(output=None):
-    t = "Kaithemtest"
+    t = "test_" + str(time.time())
     play_sound("alert.ogg", output=output, handle=t)
     for i in range(100):
         if is_playing(t, refresh=True):

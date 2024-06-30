@@ -9,7 +9,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 JACK-Client = "^0.5.4"
-scullery = "^0.1.19"
+scullery = ">=0.2.0"
 
 
 [build-system]
