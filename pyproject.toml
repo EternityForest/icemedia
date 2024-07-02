@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "icemedia"
-version = "0.1.7"
+version = "0.1.8"
 description = "Media handling library with GStreamer wrapper, sound player, and Jack manager"
 authors = ["Daniel Dunn <dannydunn@eternityforest.com>"]
 license = "LGPLv2+"

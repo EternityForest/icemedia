@@ -154,6 +154,8 @@ class WindowsSocket(threading.Thread):
         if self.socket is not None:
             try:
                 self.socket.close()
+            except AttributeError:
+                pass
             except OSError:
                 pass  # Ignore socket close failure.
         if join:
@@ -232,6 +234,8 @@ class UnixSocket(threading.Thread):
                 self.socket.shutdown(socket.SHUT_WR)
                 self.socket.close()
                 self.socket = None
+            except AttributeError:
+                pass
             except OSError:
                 pass  # Ignore socket close failure.
         if join:

@@ -1258,6 +1258,12 @@ class GStreamerPipeline:
                 value = Gst.Caps(value)
                 self.weakrefs[str(value)] = value
 
+            if isinstance(value, dict):
+                st = Gst.Structure.new_empty("foo")
+                for i in value:
+                    st[i] = value[i]
+                value = st
+
             if prop.startswith("_"):
                 prop = prop[1:]
 

@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.1.18
+
+- :sparkles: Convert dict to Gst.structure automatically
+- :bug: Nuisance errors on shutdown
+
 ## 0.1.17
 
 - :bug: Fix interrupting a fade with another fade
