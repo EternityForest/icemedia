@@ -375,12 +375,6 @@ class GStreamerPipeline:
 
         self.rpc = None
 
-    def add_jack_mixer_send_elements(self, *a, **k):
-        a, b = self.rpc_call(
-            "add_jack_mixer_send_elements", args=a, kwargs=k, block=0.0001, timeout=10
-        )
-        return (ElementProxy(self, a), ElementProxy(self, b))
-
     def print(self, s):
         print(s)
 

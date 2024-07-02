@@ -1245,46 +1245,6 @@ class GStreamerPipeline:
     def add_elementRemote(self, *a, **k):
         return id(self.add_element(*a, **k))
 
-    def add_jack_mixer_send_elements(self, target, idee, volume=-60):
-        with self.lock:
-            if not isinstance(target, str):
-                raise ValueError("Target must be string")
-
-            e = self.makeElement("tee")
-            q = self.makeElement("queue")
-            q2 = self.makeElement("queue")
-            q2.max_size_buffers = 1
-            q.max_size_buffers = 1
-            q.leaky = 2
-            q2.leaky = 2
-            volume_element = self.makeElement("volume")
-            volume_element.set_property("volume", 10 ** (volume / 20))
-
-            e2 = self.makeElement("jackaudiosink", "_send" + str(len(self.elements)))
-            e2.set_property("buffer-time", 10)
-            e2.set_property("port-pattern", "fdgjkndgmkndfmfgkjkf")
-            e2.set_property("sync", False)
-            e2.set_property("slave-method", 0)
-            e2.set_property("provide-clock", False)
-            e2.set_property("connect", False)
-
-            e2.latency_time = 10
-
-            tee_src_pad_template = e.get_pad_template("src_%u")
-            tee_audio_pad = e.request_pad(tee_src_pad_template, None, None)
-            tee_audio_pad2 = e.request_pad(tee_src_pad_template, None, None)
-
-            if self.elements:
-                link(self.elements[-1], e)
-            link(tee_audio_pad, q)
-            link(tee_audio_pad2, q2)
-            self.elements.append(q2)
-
-            link(q, volume_element)
-            link(volume_element, e2)
-
-            return id(volume_element), id(e2)
-
     def set_property(self, element, prop, value):
         with self.lock:
             if isinstance(element, int):
