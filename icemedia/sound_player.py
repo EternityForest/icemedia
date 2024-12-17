@@ -283,10 +283,12 @@ class MPVBackend(SoundWrapper):
                 self.player.player.is_configured = True
 
             if speed != self.player.conf_speed:
+                self.player.conf_speed = speed
                 self.player.player.audio_pitch_correction = False
                 self.player.player.speed = speed
 
             if not loop == self.player.loop_conf:
+                self.player.loop_conf = loop
                 # For legavy reasons some stuff used tens of millions instead of actual infinite loop.
                 # But it seems mpv ignores everything past a certain number. So we replace effectively forever with
                 # actually forever to get the same effect, assuming that was user intent.

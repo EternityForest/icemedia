@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.1.19
+
+- :bug: Fix failure to change speeds
+
 ## 0.1.18
 
 - :sparkles: Convert dict to Gst.structure automatically
