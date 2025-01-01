@@ -221,7 +221,7 @@ class PlayerHolder(object):
         self.conf = [0]
         self.is_configured = False
         self.lastvol = -99089798
-        self.conf_speed = 1
+        self.conf_speed = 1.0
         self.loop_conf = -1
         self.alreadyMadeReplacement = False
         self.lastjack = "hgfdxcghjkufdszcxghjkuyfgdx"
@@ -286,6 +286,8 @@ class MPVBackend(SoundWrapper):
                 self.player.conf_speed = speed
                 self.player.player.audio_pitch_correction = False
                 self.player.player.speed = speed
+
+            self.speed: float = speed
 
             if not loop == self.player.loop_conf:
                 self.player.loop_conf = loop
@@ -441,7 +443,7 @@ class MPVBackend(SoundWrapper):
                     self.player.lastvol = volume
                     self.player.player.volume = volume * 100
 
-        def set_speed(self, speed):
+        def set_speed(self, speed: float):
             with self.lock:
                 if self.player:
                     if not self.alreadySetCorrection:
@@ -450,6 +452,7 @@ class MPVBackend(SoundWrapper):
                     # Mark as needing to be updated
                     self.player.conf_speed = speed
                     self.player.player.speed = speed
+                self.speed = speed
 
         def getVol(self):
             with self.lock:
@@ -602,7 +605,7 @@ class MPVBackend(SoundWrapper):
             pass
 
         def f():
-            t = time.monotonic()
+            fade_start_time = time.monotonic()
             try:
                 old_volume = old_sound.volume
             except Exception:
@@ -611,19 +614,28 @@ class MPVBackend(SoundWrapper):
             try:
                 old_speed = old_sound.speed
             except Exception:
-                old_speed = 0
+                old_speed = 1
 
             targetVol = 1
-            while time.monotonic() - t < max(length, winddown, windup):
+            while time.monotonic() - fade_start_time < max(length, winddown, windup):
                 if max(length, winddown):
                     foratio = max(
-                        0, min(1, ((time.monotonic() - t) / max(length, winddown)))
+                        0,
+                        min(
+                            1,
+                            (
+                                (time.monotonic() - fade_start_time)
+                                / max(length, winddown)
+                            ),
+                        ),
                     )
                 else:
                     foratio = 1
 
                 if length:
-                    firatio = max(0, min(1, ((time.monotonic() - t) / length)))
+                    firatio = max(
+                        0, min(1, ((time.monotonic() - fade_start_time) / length))
+                    )
                 else:
                     firatio = 1
 
@@ -636,7 +648,10 @@ class MPVBackend(SoundWrapper):
 
                         if winddown:
                             wdratio = max(
-                                0, min(1, ((time.monotonic() - t) / winddown))
+                                0,
+                                min(
+                                    1, ((time.monotonic() - fade_start_time) / winddown)
+                                ),
                             )
                             old_sound.set_speed(max(0.1, old_speed * (1 - wdratio)))
                     except AttributeError:
@@ -653,7 +668,10 @@ class MPVBackend(SoundWrapper):
                         )
 
                         if windup:
-                            wuratio = max(0, min(1, ((time.monotonic() - t) / windup)))
+                            wuratio = max(
+                                0,
+                                min(1, ((time.monotonic() - fade_start_time) / windup)),
+                            )
                             self.set_speed(
                                 max(0.1, min(speed, wuratio * speed, 8)), handle
                             )

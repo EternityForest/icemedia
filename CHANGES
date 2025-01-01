@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.1.20
+
+- :bug: Fix media wind down just jumping to lowest speed
+
 ## 0.1.19
 
 - :bug: Fix failure to change speeds
