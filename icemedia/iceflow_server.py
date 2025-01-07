@@ -8,6 +8,7 @@ import time
 import logging
 import weakref
 import traceback
+import gc
 import os
 import sys
 import base64
@@ -1301,6 +1302,23 @@ gstp = None
 ppid = os.getppid()
 
 
+def stop_with_thread(pipeline: GStreamerPipeline):
+    complete = [False]
+
+    def f():
+        gstp.stop()
+        complete[0] = True
+
+    t = threading.Thread(target=f)
+    t.start()
+    for i in range(100):
+        if complete[0]:
+            break
+        time.sleep(0.1)
+    if not complete[0]:
+        os.kill(os.getpid(), 9)
+
+
 def main():
     global gstp
 
@@ -1313,17 +1331,23 @@ def main():
 
         if (not check_pid(ppid)) or stopflag[0]:
             try:
-                gstp.stop()
+                stop_with_thread(gstp)
             except Exception:  # noqa
                 pass
             sys.exit()
 
         if not os.getppid() == ppid:
             try:
-                gstp.stop()
+                stop_with_thread(gstp)
             except Exception:  # noqa
                 pass
             return
+
+    try:
+        rpc[0].watchdog.stop()
+    except Exception:  # noqa
+        pass
+    gc.collect()
 
 
 if __name__ == "__main__":
