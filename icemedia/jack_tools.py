@@ -9,11 +9,8 @@ __doc__ = ""
 
 import weakref
 import threading
-import functools
-import os
 import time
 import traceback
-import sys
 
 
 import jack
@@ -21,36 +18,6 @@ import jack
 
 def portToInfo(p):
     return PortInfo(p.name, p.is_input, p.shortname, p.is_audio, list(p.aliases))
-
-
-@functools.cache
-def which(program):
-    "Check if a program is installed like you would do with UNIX's which command."
-
-    # Because in windows, the actual executable name has .exe while the command name does not.
-    if sys.platform == "win32" and not program.endswith(".exe"):
-        program += ".exe"
-
-    # Find out if path represents a file that the current user can execute.
-    def is_exe(fpath):
-        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-
-    fpath, fname = os.path.split(program)
-    # If the input was a direct path to an executable, return it
-    if fpath:
-        if is_exe(program):
-            return program
-
-    # Else search the path for the file.
-    else:
-        for path in os.environ["PATH"].split(os.pathsep):
-            path = path.strip('"')
-            exe_file = os.path.join(path, program)
-            if is_exe(exe_file):
-                return exe_file
-
-    # If we got this far in execution, we assume the file is not there and return None
-    return None
 
 
 # Util is not used anywhere else
@@ -339,20 +306,6 @@ def _ensureConnections(*a, **k):
                 print(traceback.format_exc())
     except Exception:
         ensureConnectionsQueued[0] = 0
-        log.exception("Probably just a weakref that went away.")
-
-
-def _checkNewAvailableConnection(*a, **k):
-    "Auto restore connections in the connection list"
-    try:
-        with lock:
-            x = list(allConnections.keys())
-        for i in x:
-            try:
-                allConnections[i].reconnect()
-            except Exception:
-                print(traceback.format_exc())
-    except Exception:
         log.exception("Probably just a weakref that went away.")
 
 
