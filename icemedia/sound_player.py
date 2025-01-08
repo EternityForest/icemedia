@@ -20,25 +20,6 @@ from .python_mpv_jsonipc import MPV
 log = logging.getLogger("system.sound")
 
 
-def tryCloseFds(p: Optional[subprocess.Popen[Any]]):
-    if p:
-        try:
-            if p.stdout:
-                p.stdout.close()
-        except Exception:
-            pass
-        try:
-            if p.stderr:
-                p.stderr.close()
-        except Exception:
-            pass
-        try:
-            if p.stdin:
-                p.stdin.close()
-        except Exception:
-            pass
-
-
 media_paths = [""]
 
 media_resolvers: dict[str, Callable[[str], str | None]] = {}

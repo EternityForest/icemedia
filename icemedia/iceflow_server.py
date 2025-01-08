@@ -57,6 +57,8 @@ def check_pid(pid: int):
     """Check For the existence of a unix pid."""
     try:
         os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
     except OSError:
         return False
     else:

@@ -120,18 +120,20 @@ pipes = weakref.WeakValueDictionary()
 
 class GStreamerPipeline:
     def __init__(self, *a, **k):
+        self.ended = False
+        # Unusued, the lock is for compatibility wiith the old not-rpc based iceflow
+        self.lock = threading.RLock()
+
         self.error_info_handlers = []
 
         # If del can't find this it would to an infinite loop
         self.worker: Optional[Popen] = None
 
         pipes[id(self)] = self
-        self.ended = False
         f = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "iceflow_server.py"
         )
-        # Unusued, the lock is for compatibility wiith the old not-rpc based iceflow
-        self.lock = threading.RLock()
+
         env = {}
         env.update(os.environ)
         env["GST_DEBUG"] = "*:1"
