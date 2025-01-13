@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.1.21
+
+- :bug: More reliable background process cleanup if host fails
+
 ## 0.1.20
 
 - :bug: Fix media wind down just jumping to lowest speed
