@@ -32,10 +32,21 @@ try:
             "site-packages",
             "gi",
         )
-        s = "/usr/lib/python3/dist-packages/gi"
 
+        s = "/usr/lib/python3/dist-packages/gi"
         if os.path.exists(s) and (not os.path.exists(p)):
             os.symlink(s, p)
+except Exception:
+    logging.exception("Failed to do the gstreamer hack")
+
+
+try:
+    for i in sys.path:
+        if "uv/tools" in i:
+            p = os.path.join(i, "gi")
+            s = "/usr/lib/python3/dist-packages/gi"
+            if os.path.exists(s) and (not os.path.exists(p)):
+                os.symlink(s, p)
 except Exception:
     logging.exception("Failed to do the gstreamer hack")
 

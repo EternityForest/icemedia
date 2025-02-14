@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.1.22
+
+- :bug: Ability to find system gstreamer when running under uv
+
+
 ## 0.1.21
 
 - :bug: More reliable background process cleanup if host fails
