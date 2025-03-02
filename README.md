@@ -41,7 +41,7 @@ so it only makes sense if fading to silence).
 Fading is perceptually linear.
 
 
-#### icemedia.sound_player.play(filename,handle="PRIMARY",volume=1,start=0,end=-0.0001, output=None,fs=False,extraPaths=\[\])
+#### icemedia.sound_player.play_sound(filename,handle="PRIMARY",volume=1,start=0,end=-0.0001, output=None,fs=False,extraPaths=\[\])
 
 The handle parameter lets you name the new sound instance to
 stop it later or set volume.
