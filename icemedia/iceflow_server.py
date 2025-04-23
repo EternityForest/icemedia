@@ -1311,7 +1311,7 @@ def stop_with_thread(pipeline: GStreamerPipeline):
         gstp.stop()
         complete[0] = True
 
-    t = threading.Thread(target=f)
+    t = threading.Thread(target=f, daemon=True)
     t.start()
     for i in range(100):
         if complete[0]:
@@ -1326,25 +1326,31 @@ def main():
 
     gstp = GStreamerPipeline()
     # Replace the dummy we put there for the linter
-    rpc[0] = jsonrpyc.RPC(target=gstp)
+    rpc[0] = jsonrpyc.RPC(target=gstp, daemon=True)
 
     while 1:
-        time.sleep(1)
+        try:
+            time.sleep(1)
 
-        if (not check_pid(ppid)) or stopflag[0]:
-            try:
-                stop_with_thread(gstp)
-            except Exception:  # noqa
-                pass
-            sys.exit()
+            if (not check_pid(ppid)) or stopflag[0]:
+                try:
+                    stop_with_thread(gstp)
+                except Exception:  # noqa
+                    pass
+                sys.exit()
 
-        if not os.getppid() == ppid:
-            try:
-                stop_with_thread(gstp)
-            except Exception:  # noqa
-                pass
-            return
+            if not os.getppid() == ppid:
+                try:
+                    stop_with_thread(gstp)
+                except Exception:  # noqa
+                    pass
+                return
 
+        except Exception:  # noqa
+            if os.path.exists("/dev/shm/"):
+                with open("/dev/shm/iceflow_server_error.txt", "w") as f:
+                    f.write(traceback.format_exc())
+            os.kill(os.getpid(), 9)
     try:
         rpc[0].watchdog.stop()
     except Exception:  # noqa
